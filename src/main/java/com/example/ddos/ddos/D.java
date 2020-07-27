@@ -6,10 +6,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.client.RestTemplate;
 
+import javax.swing.text.html.Option;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -70,7 +72,11 @@ public class D{
             System.out.println("...");
         }
 
+        Optional<Integer> op = a.stream().filter(f -> f > 3).findAny(); // null 반환 가능하므로
+        a.stream().filter(f -> f > 3).findAny().ifPresent(f -> System.out.println(f));
+        // findFist == findAny 비슷하나 차이가 잇음
 
+        int
 
     }
 
