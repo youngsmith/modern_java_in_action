@@ -76,7 +76,13 @@ public class D{
         a.stream().filter(f -> f > 3).findAny().ifPresent(f -> System.out.println(f));
         // findFist == findAny 비슷하나 차이가 잇음
 
-        int
+        // map-reduce 구글이 검색엔진에 사용하면서 유명해짐.
+        long count = a.stream().filter(i -> i > 3).map(i -> 1).reduce(0, (i, j) -> i + j);
+        count = a.stream().filter(i -> i > 3).count();
+
+        long sum = a.stream()
+                .mapToInt(i->i)
+                .sum();
 
     }
 
