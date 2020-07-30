@@ -42,15 +42,23 @@ public class D{
             <중간 연산>
             걸러내기 : filter, distinct, limit, skip, takeWhile, dropWhile
             찾기 : findAny, findFirst, allMatch, noneMatch, anyMatch
-            매핑 : map, flatMap
+            매핑 : map, flatMap, mapToObj
             정렬 : sorted
-            범위 생성 : range, rangeClosed
             디버깅 : peek
 
             <최종 연산>
             forEach, min, max, count, collect, toArray
 
-            stream 이 비어있을 경우, min, max 는 Optional<T> 을 반환.
+            min, max 는 stream 이 비어있을 경우, Optional<T> 을 반환.
+
+            <스트림 생성>
+            range, rangeClosed
+            ex) IntStream.range(1, 100)...
+
+            iterate
+            ex) Stream.iterate(0, n -> n + 2)
+                        .limit(10)...
+
          */
 
 
@@ -88,10 +96,13 @@ public class D{
 
 
         /*
-            다양한 정렬 방법
-            Integer -> int (auto unboxing) 후, sort. 두 타입이 맞지 않다면, 성능상 좋지 않을 수 있음.
+            다중 정렬
          */
-        l.stream().sorted(Comparator.comparingInt(Book::getA));
+        l.stream().sorted(
+                Comparator.comparing(Book::getA)
+                        .reversed()
+                        .thenComparing(Book::getB)
+        );
 
 
 
@@ -116,9 +127,10 @@ public class D{
             System.out.println("...");
         }
 
+        List<Integer> results = new ArrayList<>();
         a.stream().filter(f -> f > 3)
                 .findAny()          // null 반환 가능, return Optional<T>
-                .ifPresent(f -> System.out.println(f));
+                .ifPresent(results::add);
 
 
 
@@ -155,10 +167,11 @@ public class D{
         /*
             java 9
             map을 써야하는데 null 반환이 가능하다면,
-            flatMap(k -> Stream.ofNullable(...));
+
+            Stream.of("a", "b", "c")
+                .flatMap(k -> Stream.ofNullable(System.getProperty(k)));
          */
-//        Stream.of("a", "b", "c")
-//                .flatMap(k -> Stream.ofNullable(System.getProperty(k)));
+
 
 
 
