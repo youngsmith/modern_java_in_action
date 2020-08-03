@@ -5,9 +5,11 @@ import lombok.Data;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import static java.util.stream.Collectors.*;
+
 
 public class D{
     @AllArgsConstructor
@@ -16,11 +18,16 @@ public class D{
     class Book {
         Integer a, b, c;
         String s;
+
+        public Book() {
+
+        }
     }
 
     @FunctionalInterface
     interface a {
         void print(String a, int b);
+        default int func() { return 1; }
     }
 
     public <T, R> List<R> map(List<T> list, Function<T, R> f) {
@@ -32,9 +39,69 @@ public class D{
     }
 
     public static void main(String[] args) {
+        /*
+            lambda expression : anonymous class(익명 클래스) 의 객체와 동등
+            functional interface 를 통해 람다식을 다루는 것이 자바 규칙을 어기지 않으면서, 자연스러움.
+
+            (parameter) -> expression
+            (parameter) -> { statement; }
+
+            method reference : lambda expression 의 불필요한 코드들을 제거하고, 가독성을 높이기 위해 사용.
+
+            ClassName::methodName
+            expr::methodName
+
+    `       <anonymous class>
+            클래스 선언과 초기화를 한 번에 할 수 있게 해줌.
+            local class와 비슷한데 이름이 없음, 한 번만 사용한다면 유용.
+
+            아래 객체의 클래스는 EventHandler<ActionEvent> 클래스를 갖는게 아니라, 클래스 이름이 없음.
+            new EventHandler<ActionEvent>() {
+                @Override
+                public void handle(ActionEvent event) {
+                    System.out.println("Hello World!");
+                }
+            }
 
 
-        List<Book> l = Arrays.asList(new Book(3,2,3, "a"), new Book(2,3,4, "b"), new Book(1,4,5, "c")  );
+            <functional interface>
+            단 하나의 abstract method 를 가지고 있는 interface.
+            하나 이상의 default method 를 가질 수 있음.
+
+            Predicate<T> ; boolean test(T t);
+            Consumer<T> ; void accept(T t);
+            Function<T, R> ; R apply(T t);
+            Supplier<R> ; R get();
+
+            기본 특화형도 있음.
+            IntPredicate ; boolean test(int t);
+            ...
+         */
+
+        System.out.println(new Book(1,2,3,"a").getClass().toString());  // class com.example.ddos.ddos.D$Book
+        System.out.println(new Book(1,2,3,"a"){
+            @Override
+            public boolean equals(Object obj) {
+                return true;
+            }
+        }.getClass().toString());                                               // class com.example.ddos.ddos.D$1
+        // TODO : 재실행 시 바뀌는지 확인해보기
+
+
+        /*
+            생성자 참조
+         */
+        Map<String, Supplier<Book>> map = new HashMap<>();
+        map.put("fantasy", Book::new);
+        map.put("comic", Book::new);
+
+        Book comic = map.get("comic").get();
+
+
+
+
+
+
 
         /*
             stream : A sequence of elements supporting sequential and parallel aggregate operations.
@@ -61,12 +128,13 @@ public class D{
 
          */
 
+        List<Book> l = Arrays.asList(new Book(3,2,3, "a"), new Book(2,3,4, "b"), new Book(1,4,5, "c")  );
 
         /*
             flatMap 사용법
          */
         String[] e = {"abc", "def"};
-        List<Stream<String>> s = Arrays.stream(e)
+        List<Stream<String>> s1 = Arrays.stream(e)
                 .map(a -> a.split(""))
                 .map(Arrays::stream)
                 .distinct()
@@ -123,6 +191,8 @@ public class D{
 
             findFist : stream 에서 첫번째 element 반환 (Optional<T> findFirst())
          */
+
+        // a.contains()을 자주 사용.
         if(a.stream().anyMatch(i -> i == 2)) {
             System.out.println("...");
         }
@@ -242,9 +312,10 @@ public class D{
                         toCollection(HashSet::new)
                 )));
 
+        // l.stream().count();
         Map<Integer, Long> r3 = l.stream()
                 .collect(groupingBy(Book::getA, counting()));
-        // l.stream().count();
+
 
         Map<Integer, Integer> r1 = l.stream()
                 .collect(groupingBy(Book::getA, summingInt(Book::getB)));
@@ -262,7 +333,38 @@ public class D{
 
 
 
+        /*
+            partitioningBy
+            predicate 를 분류 함수로 사용하는 특수한 그룹화 기능.
+            boolean 을 반환하므로 최대 두 개의 그룹으로 분류.
+            filter 랑 다른 점은, 분류한 두 요소의 스트림 리스트를 모두 유지한다는 것.
+         */
 
+        Map<Boolean, Map<Integer, List<Book>>> part = l.stream()
+                .collect(partitioningBy(zz -> zz.getB() == 0,
+                        groupingBy(Book::getA)));
+
+        Map<Boolean, Map<Boolean, List<Book>>> part2 = l.stream()
+                .collect(partitioningBy(zz -> zz.getB() == 0,
+                        partitioningBy(zz -> zz.getA() == 0)));
+
+        Map<Boolean, Long> part3 = l.stream()
+                .collect(partitioningBy(zz -> zz.getB() == 0, counting()));
+
+        Map<Boolean, Book> part1 = l.stream()
+                .collect(partitioningBy(zz -> zz.getB() == 0,
+                        collectingAndThen(
+                                maxBy(Comparator.comparing(Book::getA)), Optional::get)));
+
+
+
+
+
+
+
+
+        Map<Integer, Integer> map;
+        //map.remove(1, 2)
 
     }
 
