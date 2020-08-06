@@ -2,16 +2,27 @@ package com.example.ddos.ddos;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import static java.util.stream.Collectors.*;
 
-
+@RunWith(JUnit4.class)
 public class D{
+    @Test
+    public void at() {
+
+    }
+
     @AllArgsConstructor
     @Data
     static
@@ -38,9 +49,45 @@ public class D{
         return result;
     }
 
-    public static void main(String[] args) {
+    public static List<Integer> list3 = Arrays.asList(1);
+    public static void completableTest() {
+        /*
+            아래 스트림 비동기로 실행됨.
+            출력 순서 sleep -> terminal -> finished -> thenApply
+         */
+        list3.stream()
+                .map(i -> CompletableFuture.supplyAsync(() -> {
+                    try {
+
+                        System.out.println("sleep");
+                        Thread.sleep(1000);
+                        System.out.println("finished");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    return i;
+                }))
+                .map(future -> future.thenApply(i -> {
+                    System.out.println("thenApply");
+                    return i + 1;
+                }))
+                .collect(Collectors.toList());
+
+        System.out.println("terminal");
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        completableTest();
+        Thread.sleep(1000);
+    }
+
+
+    public static void main12(String[] args) {
         /*
             lambda expression : anonymous class(익명 클래스) 의 객체와 동등
+            anonymous class 는 new (interface) { imple... }; 같은 형식 또한 anonymous class 이므로
+            functional interface 를 통해 람다식을 다루는 것은, anonymous class 의 객체와 동등하다고 판단 가능.
+
             functional interface 를 통해 람다식을 다루는 것이 자바 규칙을 어기지 않으면서, 자연스러움.
 
             (parameter) -> expression
@@ -53,7 +100,7 @@ public class D{
 
     `       <anonymous class>
             클래스 선언과 초기화를 한 번에 할 수 있게 해줌.
-            local class와 비슷한데 이름이 없음, 한 번만 사용한다면 유용.
+            local class 와 비슷한데 이름이 없음, 한 번만 사용한다면 유용.
 
             아래 객체의 클래스는 EventHandler<ActionEvent> 클래스를 갖는게 아니라, 클래스 이름이 없음.
             new EventHandler<ActionEvent>() {
@@ -91,11 +138,11 @@ public class D{
         /*
             생성자 참조
          */
-        Map<String, Supplier<Book>> map = new HashMap<>();
-        map.put("fantasy", Book::new);
-        map.put("comic", Book::new);
+        Map<String, Supplier<Book>> map1 = new HashMap<>();
+        map1.put("fantasy", Book::new);
+        map1.put("comic", Book::new);
 
-        Book comic = map.get("comic").get();
+        Book comic = map1.get("comic").get();
 
 
 
@@ -113,10 +160,13 @@ public class D{
             정렬 : sorted
             디버깅 : peek
 
+            flatMap 은 stream 내에서 stream 을 생성할 때, stream 을
+            하나 벗겨내기 위해서 사용.
+
             <최종 연산>
             forEach, min, max, count, collect, toArray
 
-            min, max 는 stream 이 비어있을 경우, Optional<T> 을 반환.
+            min, max 는 Optional<T> 을 반환.
 
             <스트림 생성>
             range, rangeClosed
@@ -358,13 +408,89 @@ public class D{
 
 
 
+        /*
+            병렬 스트림
+            자바 7에서 추가된 fork/join framework 로 병렬 스트림이 처리됨.
+
+            <효과적으로 사용하기>
+            - 직접 효과를 측정해보기.
+            - boxing 오버헤드 주의.
+            - limit(), findFist() 처럼 순서에 의존하는 연산을 병렬 스트림에서 수행하려면 비용이 비쌈. findAny() 사용하기.
+            - 데이터 양이 적절히 많고, 하나 데이터 처리하는데 걸리는 시간 높을 수록 효율 증대.
+            - 자료구조 주의. 청크 나눌때 많은 영향을 끼침.
+            - 중간 연산이 병렬에 영향을 끼칠 수 있음. (필터 연산 등...)
+            - 병합 비용을 고려하기.
+
+            <분해하기 좋은 자료구조>
+            ArrayList = IntStream.range > HashSet = TreeSet >> LinkedList = Stream.iterate
+         */
+        LongStream.rangeClosed(1, 10)
+                .parallel()
+                .reduce(0L, Long::sum);
+
+
+        /*
+            컬렉션 팩토리
+            기존 Arrays.asList(...); 요소를 갱신 가능, 요소 추가/삭제 시 exception 발생
+            컬렉션을 만드는 새로운 방법.
+
+            <리스트 팩토리>
+            List.of(...); 요소 갱신, 추가, 삭제 시 모두 exception 발생
+            Collectors.toList(); 는 stream 을 사용하는 상황이 아니라면, 사용 비권장.
+
+            <Set 팩토리>
+            Set.of(...);
+
+            <List & Set 처리>
+            - removeIf : List & Set 모두 지원.
+            - replaceAll : List 만 지원, stream 은 새로운 컬렉션을 만들지만, 기존 리스트가 바뀜.
+            - sort : List 만 지원.
+
+            <Map 팩토리>
+            - Map.of(k1, v1, k2, v2, ...);
+            - Map.ofEntries(entry(..), entry(..), ...);
+
+            <Map 처리>
+            기존
+            for(Map.Entry<String, Integer> entry : friends.entrySet()) {
+                String name = entry.getKey();
+                Integer age = entry.getValue();
+            }
+
+            friends.forEach((name, age) -> { ... });
+
+            Entry.ComparingByKey / Entry.ComparingByValue 로 정렬 기준을 정할 수 있음.
+            friends.entrySet()
+                .stream()
+                .sorted(Entry.ComparingByKey())
+                .forEachOrdered(...);
+
+            friends.getOrDefault("a", "default value");
+
+            - computeIfAbsent / computeIfPresent / remove / replaceAll
+            friends.computeIfAbsent("a", name -> new ArrayList<>());
+            friends.remove(key, value); key, value 가 일치할 때만 제거
+            friends.replaceAll((name, movie) -> movie.toUpperCase()); value 값을 교체하는 함수.
+         */
+
+
+        /*
+            자바 8에서 기본 구현을 포함하는 인터페이스를 정의하는 두 가지 방법
+            - static method
+            - default method
+
+            default method 사용 이유 : 공개된 API 를 고치면 기존 버전과 호환성 문제가 발생.
+            이런 호환성을 유지하면서 API 를 바꿀 수 있도록 해주는 기능.
+            라이브러리 개발자들이 주로 사용.
+
+            바이너리 호환성 : 새로 추가된 매서드를 호출하지만 않으면 새로운 메서드 구현 없이
+            기존 클래스 파일 구현이 잘 동작한다는 뜻.
+
+         */
 
 
 
 
-
-        Map<Integer, Integer> map;
-        //map.remove(1, 2)
 
     }
 
